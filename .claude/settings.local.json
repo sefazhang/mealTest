@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(node -e \":*)",
+      "Read(//c/Users/admin/Downloads/**)",
+      "Bash(python3 -c \":*)",
+      "Bash(python:*)",
+      "Bash(where node:*)",
+      "Bash(node -e \"require\\(''''mammoth''''\\)\")",
+      "Bash(npm install:*)",
+      "Bash(node:*)"
+    ]
+  }
+}
