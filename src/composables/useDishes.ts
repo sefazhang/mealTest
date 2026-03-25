@@ -1,6 +1,8 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import dishesData from '../data/dishes.json'
 import type { Dish } from '../types/dish'
+import { ref as dbRef, onValue, set } from 'firebase/database'
+import { db } from '../firebase'
 
 const EXCLUDE_INGREDIENTS = [
   '盐', '酱油', '醋', '糖', '料酒', '淀粉', '油', '花椒', '辣椒', '葱', '姜', '蒜',
@@ -13,6 +15,20 @@ export function useDishes() {
   const dishes = ref<Dish[]>(dishesData)
   const typeFilter = ref('')
   const ingredientFilter = ref('')
+
+  // 监听 Firebase 菜品变化
+  onMounted(() => {
+    const dishesRef = dbRef(db, 'dishes')
+    onValue(dishesRef, (snapshot) => {
+      const data = snapshot.val()
+      if (data) {
+        dishes.value = data
+      } else {
+        // 首次初始化数据
+        set(dishesRef, dishesData)
+      }
+    })
+  })
 
   const allIngredients = computed(() => {
     const ings = new Set<string>()
@@ -38,5 +54,11 @@ export function useDishes() {
     ingredientFilter.value = ''
   }
 
-  return { dishes, typeFilter, ingredientFilter, allIngredients, filteredDishes, clearFilters }
+  const addDish = async (dish: Dish) => {
+    const dishesRef = dbRef(db, 'dishes')
+    const newDishes = [...dishes.value, dish]
+    await set(dishesRef, newDishes)
+  }
+
+  return { dishes, typeFilter, ingredientFilter, allIngredients, filteredDishes, clearFilters, addDish }
 }
