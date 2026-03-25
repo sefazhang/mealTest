@@ -1,6 +1,8 @@
 import { ref, onMounted } from 'vue'
 import type { Dish } from '../types/dish'
 import { initDB, saveRecord, getAllRecords } from '../utils/db'
+import { ref as dbRef, onValue, set } from 'firebase/database'
+import { db } from '../firebase'
 
 interface DailyRecord {
   date: string
@@ -15,26 +17,22 @@ export function useDailyMenu() {
 
   const loadData = async () => {
     await initDB()
-
-    const stored = localStorage.getItem('dailyMenu')
-    if (stored) {
-      const data = JSON.parse(stored)
-      if (data.date === getToday()) {
-        todayMenu.value = data.dishes
-      } else {
-        todayMenu.value = []
-      }
-    }
-
     history.value = await getAllRecords()
     history.value.sort((a, b) => b.date.localeCompare(a.date))
+
+    // 监听 Firebase 今日菜单
+    const menuRef = dbRef(db, `dailyMenus/${getToday()}`)
+    onValue(menuRef, (snapshot) => {
+      const data = snapshot.val()
+      if (data) {
+        todayMenu.value = data
+      }
+    })
   }
 
-  const saveData = () => {
-    localStorage.setItem('dailyMenu', JSON.stringify({
-      date: getToday(),
-      dishes: todayMenu.value
-    }))
+  const saveData = async () => {
+    const menuRef = dbRef(db, `dailyMenus/${getToday()}`)
+    await set(menuRef, todayMenu.value)
   }
 
   const addToMenu = (dish: Dish) => {
